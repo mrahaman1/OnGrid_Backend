@@ -24,13 +24,13 @@ const signup = async (req,res)=>{
             password: hashpassword
         })
         
-        const insert = await userobj.save();
+         await userobj.save();
 
-        return res.status(200).send(insert)
+        return res.json({status:"ok"})
     }
     catch(err){
         console.log(err)
-        return res.status(500).send("something went wrong")
+        return res.status(500).send("invalid details")
     }
 }
 
@@ -38,15 +38,17 @@ const login = async (req,res)=>{
     const {email,password}=req.body;
     const user = await User.findOne({email});
     if(!user){
-       return res.send("invalid username ")
+        return res.json({status:"error"})
     }
     const checkpassword = await bcrypt.compare(password, user.password);
     if(checkpassword){
-        const token = jwt.sign({},JWT_SECRET)
+        const token = jwt.sign({email: user.email},JWT_SECRET, {
+            expiresIn:'1d',
+        })
         
         return res.json({status:"ok", data:token})
     }else{
-        return res.send("invalid password ")
+        return res.json({status:"error"})
     }
     
 }
@@ -63,12 +65,12 @@ const bookdemo = async (req,res)=>{
             name,
             email,
             phonenumber,
-            organisation,
+            organisation, 
             aboutongrid
         })
         const bookinsert = await bookdemoobj.save();
         
-        return res.status(200).json("demo booked").send(bookinsert)
+        return res.status(200).send(bookinsert)
     }
     catch(err){
         console.log(err)
@@ -76,4 +78,29 @@ const bookdemo = async (req,res)=>{
     }
 }
 
-module.exports = {signup,login,bookdemo};
+const userdetails= async (req,res)=>{
+    const {token}=req.body;
+    try {
+        const user = jwt.verify(token, JWT_SECRET, (err,res)=>{
+            if(err){
+                return "token expired";
+            }
+            return res;
+        });
+        if(user=="token expires"){
+            return res.json({status: "error", data:"token expired"})
+        }
+        const useremail = user.email;
+        User.findOne({email: useremail})
+        .then((data)=>{
+            res.send({status: "ok", data: data});
+        })
+        .catch((error)=>{
+            res.send(error);
+        })
+    } catch (error) {
+        
+    }
+}
+
+module.exports = {signup,login,bookdemo,userdetails};
