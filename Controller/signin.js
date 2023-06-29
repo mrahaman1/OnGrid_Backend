@@ -1,8 +1,11 @@
 const {User} = require("../Models/usermodel")
 const {Demo} = require("../Models/demomodel")
+const {Query} = require("../Models/querymodel")
 const bcrypt =require("bcrypt")
 const jwt = require("jsonwebtoken")
 const JWT_SECRET = "mysecretkey"
+
+
 const signup = async (req,res)=>{
     const {username,age,companyname,employeeid,email,password} = req.body;
     
@@ -10,7 +13,7 @@ const signup = async (req,res)=>{
     try{
         const olduser = await User.findOne({email});
         if(olduser){
-          return  res.send("user already exists");
+          return  res.json({status:"olduser"})
         }
         const salt = await bcrypt.genSalt(10)
         const hashpassword = await bcrypt.hash(password,salt)
@@ -58,7 +61,7 @@ const bookdemo = async (req,res)=>{
     const {name,email,phonenumber,organisation,aboutongrid} = req.body;
     const user = await User.findOne({email});
     if(!user){
-       return res.json("This email is not registered. if you not signup to OnGrid you can't book a demo please signup")
+       return res.json({status:"error"})
     }
     try{
         const bookdemoobj = new Demo({
@@ -68,13 +71,13 @@ const bookdemo = async (req,res)=>{
             organisation, 
             aboutongrid
         })
-        const bookinsert = await bookdemoobj.save();
+        await bookdemoobj.save();
         
-        return res.status(200).send(bookinsert)
+        return res.json({status:"ok"})
     }
     catch(err){
         console.log(err)
-        return res.status(500).send("something went wrong")
+        return res.json({status:"error"})
     }
 }
 
@@ -103,4 +106,23 @@ const userdetails= async (req,res)=>{
     }
 }
 
-module.exports = {signup,login,bookdemo,userdetails};
+const query = async (req,res)=>{
+    const {name,email,phonenumber,query} = req.body;
+    try{        
+        const queryobj = new Query({
+            name,
+            email,
+            phonenumber,
+            query
+        })
+        
+         await queryobj.save();
+
+        return res.json({status:"ok"})
+    }
+    catch(err){
+        console.log(err)
+        return res.json({status:"error"})
+    }
+}
+module.exports = {signup,login,bookdemo,userdetails,query};
